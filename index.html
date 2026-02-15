@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aesthetic Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            transition: background-color 0.5s ease, color 0.5s ease;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            letter-spacing: 0.8px;
+            background-color: #F7F4EE;
+            color: #927E77;
+        }
+
+        .container {
+            text-align: center;
+            padding: 60px 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .title {
+            font-size: 28px;
+            letter-spacing: 12px;
+            margin-bottom: 5px;
+            margin-top: 20px;
+            font-weight: 300;
+            opacity: 0.9;
+            transition: color 0.5s ease;
+        }
+
+        .phase-indicator {
+            font-size: 14px;
+            letter-spacing: 1px;
+            opacity: 0.8;
+            min-height: 20px;
+            margin-bottom: 20px;
+        }
+
+        .timer-display {
+            font-size: 120px;
+            font-weight: 300;
+            letter-spacing: 8px;
+            margin-bottom: 28px;
+            line-height: 1;
+            transition: color 0.5s ease, transform 0.3s ease;
+            font-variant-numeric: tabular-nums;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .timer-display.pulsing {
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 0;
+            flex-wrap: wrap;
+            min-height: 44px;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 14px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 400;
+            letter-spacing: 1px;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            font-family: inherit;
+            opacity: 1;
+        }
+
+        button.fade-out {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.95);
+        }
+
+        button.fade-in {
+            animation: fadeIn 0.15s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .primary-btn {
+            background-color: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+        }
+
+        .primary-btn:hover {
+            background-color: rgba(255, 255, 255, 0.35);
+            transform: translateY(-2px);
+        }
+
+        .settings-btn {
+            background-color: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .settings-btn:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+        }
+
+        .modal.active {
+            display: block;
+        }
+
+        .modal-content {
+            position: relative;
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            margin: 5% auto;
+            padding: 30px 40px 25px 40px;
+            border-radius: 20px;
+            width: 750px;
+            max-width: 90%;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .modal-close {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 28px;
+            font-weight: 300;
+            cursor: pointer;
+            color: #8b7355;
+            transition: color 0.3s;
+            background: none;
+            border: none;
+            padding: 0;
+            width: auto;
+            height: auto;
+        }
+
+        .modal-close:hover {
+            color: #3d2817;
+        }
+
+        .modal h2 {
+            margin-bottom: 20px;
+            font-weight: 400;
+            color: #6b5444;
+            font-size: 24px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        /* Two Column Layout */
+        .main-settings-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 15px;
+        }
+
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .right-column {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .setting-group {
+            margin-bottom: 0;
+            padding: 6px 0;
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 12px;
+            text-transform: uppercase;
+            opacity: 0.8;
+            color: #6b5444 !important;
+            font-weight: 400;
+            text-align: center;
+        }
+
+        .setting-group input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            font-size: 15px;
+            background: rgba(255, 255, 255, 0.7);
+            color: #3d2817;
+            font-family: inherit;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        .setting-group input[type="text"]:focus {
+            outline: none;
+            border-color: rgba(139, 115, 85, 0.3);
+        }
+
+        /* Color Theme Section */
+        .color-theme-section {
+            margin-top: 0;
+            padding-top: 0;
+            border-top: none;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .color-theme-section h3 {
+            margin-bottom: 10px;
+            font-weight: 400;
+            color: #6b5444;
+            font-size: 12px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .theme-tabs {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 12px;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .theme-tab {
+            padding: 6px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid transparent;
+            transition: all 0.3s ease;
+            color: #8b7355;
+            font-size: 13px;
+            text-transform: uppercase;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            opacity: 0.6;
+            text-align: center;
+        }
+
+        .theme-tab.active {
+            border-bottom-color: #8b7355;
+            opacity: 1;
+        }
+
+        .theme-panel {
+            display: none;
+            min-height: 240px;
+        }
+
+        .theme-panel.active {
+            display: block;
+        }
+
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .theme-option {
+            height: 60px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .theme-option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .theme-option.selected {
+            box-shadow: 0 0 0 1.5px #8b7355;
+        }
+
+        .theme-label {
+            font-style: italic;
+            opacity: 0.8;
+            font-size: 12px;
+        }
+
+        /* Alarm Sound Section */
+        .alarm-sound-section {
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            padding-top: 16px;
+            margin-top: 16px;
+        }
+
+        .alarm-sound-section h3 {
+            margin-bottom: 12px;
+            font-weight: 400;
+            color: #6b5444;
+            font-size: 12px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .alarm-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            align-items: end;
+        }
+
+        .alarm-option {
+            height: 60px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            position: relative;
+            background: rgba(255, 255, 255, 0.7);
+            color: #8b7355;
+        }
+
+        .alarm-option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .alarm-option.selected {
+            box-shadow: 0 0 0 1.5px #8b7355;
+        }
+
+        .alarm-label {
+            font-style: italic;
+            opacity: 0.8;
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        /* Image Upload Modal */
+        .image-upload-option {
+            background-color: #F7F4EE;
+            border: none;
+        }
+
+        .camera-icon {
+            width: 28px;
+            height: 28px;
+        }
+
+        .image-modal-content {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 500px;
+            max-width: 90%;
+            position: relative;
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #8b7355;
+            background: rgba(139, 115, 85, 0.1);
+        }
+
+        .upload-area p {
+            margin: 10px 0;
+            color: #6b5444;
+        }
+
+        .url-input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .url-input-group input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.7);
+            font-family: inherit;
+        }
+
+        .url-input-group button {
+            padding: 12px 24px;
+            background-color: rgba(139, 115, 85, 0.3);
+            color: #6b5444;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .url-input-group button:hover {
+            background-color: rgba(139, 115, 85, 0.5);
+        }
+
+        /* Confirm Button */
+        .confirm-section {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .confirm-btn {
+            padding: 10px 40px;
+            background-color: rgba(139, 115, 85, 0.3);
+            color: #6b5444;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .confirm-btn:hover {
+            background-color: rgba(139, 115, 85, 0.5);
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 768px) {
+            .main-settings-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .timer-display {
+                font-size: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title" id="timerTitle">t i m e r</h1>
+        <div class="phase-indicator" id="phaseIndicator"></div>
+        <div class="timer-display" id="timerDisplay">00:00</div>
+        <div class="controls" id="controls">
+            <button class="primary-btn" id="startBtn">start</button>
+            <button class="primary-btn" id="pauseBtn" style="display: none;">pause</button>
+            <button class="primary-btn" id="resetBtn">reset</button>
+            <button class="primary-btn" id="repeatBtn" style="display: none;">repeat</button>
+            <button class="primary-btn" id="breakBtn" style="display: none;">break</button>
+            <button class="primary-btn" id="workBtn" style="display: none;">work</button>
+            <button class="primary-btn" id="closeAlarmBtn" style="display: none;">×</button>
+        </div>
+    </div>
+
+    <button class="settings-btn" id="settingsBtn">⚙</button>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeModal">×</button>
+            <h2>SETTINGS</h2>
+            
+            <div class="main-settings-layout">
+                <!-- Left Column: Basic Settings -->
+                <div class="left-column">
+                    <div class="setting-group">
+                        <label for="titleInput">TITLE</label>
+                        <input type="text" id="titleInput" placeholder="t i m e r">
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label for="workTimeInput">WORK TIME</label>
+                        <input type="text" id="workTimeInput" value="00:00:00" maxlength="8">
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label for="breakTimeInput">BREAK TIME</label>
+                        <input type="text" id="breakTimeInput" value="00:00:00" maxlength="8">
+                    </div>
+
+                    <!-- Alarm Sound Section -->
+                    <div class="alarm-sound-section">
+                        <h3>ALARM SOUND</h3>
+                        <div class="alarm-grid">
+                            <div class="alarm-option selected" data-sound="soft">
+                                <div class="alarm-label">soft<br>bells</div>
+                            </div>
+                            <div class="alarm-option" data-sound="gentle">
+                                <div class="alarm-label">gentle<br>chimes</div>
+                            </div>
+                            <div class="alarm-option" data-sound="warm">
+                                <div class="alarm-label">warm<br>glow</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Color Theme -->
+                <div class="right-column">
+                    <div class="color-theme-section">
+                        <h3>COLOR THEME</h3>
+                        
+                        <div class="theme-tabs">
+                            <div class="theme-tab active" data-tab="background">BACKGROUND COLOR</div>
+                            <div class="theme-tab" data-tab="text">TEXT COLOR</div>
+                        </div>
+
+                        <!-- Background Color Panel -->
+                        <div class="theme-panel active" id="backgroundPanel">
+                            <div class="theme-grid">
+                                <div class="theme-option selected" data-bg="#F7F4EE" style="background-color: #F7F4EE;">
+                                    <span class="theme-label" style="color: #8b7355;">lace</span>
+                                </div>
+                                <div class="theme-option" data-bg="#F5E6D3" style="background-color: #F5E6D3;">
+                                    <span class="theme-label" style="color: #8b7355;">butter</span>
+                                </div>
+                                <div class="theme-option" data-bg="#9B8B7E" style="background-color: #9B8B7E;">
+                                    <span class="theme-label" style="color: #F7F4EE;">toffee</span>
+                                </div>
+                                <div class="theme-option" data-bg="#4A3428" style="background-color: #4A3428;">
+                                    <span class="theme-label" style="color: #F7F4EE;">cocoa</span>
+                                </div>
+                                <div class="theme-option" data-bg="#B5B8A3" style="background-color: #B5B8A3;">
+                                    <span class="theme-label" style="color: #4A3428;">sage</span>
+                                </div>
+                                <div class="theme-option" data-bg="#7A8B70" style="background-color: #7A8B70;">
+                                    <span class="theme-label" style="color: #F7F4EE;">forest bliss</span>
+                                </div>
+                                <div class="theme-option" data-bg="#C5D7DD" style="background-color: #C5D7DD;">
+                                    <span class="theme-label" style="color: #4A3428;">powder blue</span>
+                                </div>
+                                <div class="theme-option" data-bg="#C9B8D0" style="background-color: #C9B8D0;">
+                                    <span class="theme-label" style="color: #4A3428;">lilac dust</span>
+                                </div>
+                                <div class="theme-option" data-bg="#E8C2C6" style="background-color: #E8C2C6;">
+                                    <span class="theme-label" style="color: #4A3428;">blush</span>
+                                </div>
+                                <div class="theme-option" data-bg="#C99FA3" style="background-color: #C99FA3;">
+                                    <span class="theme-label" style="color: #F7F4EE;">lily</span>
+                                </div>
+                                <div class="theme-option" data-bg="#8B2E3C" style="background-color: #8B2E3C;">
+                                    <span class="theme-label" style="color: #F7F4EE;">cherry</span>
+                                </div>
+                                <div class="theme-option image-upload-option" id="imageOption">
+                                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQwIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDY0MCA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2NDAiIGhlaWdodD0iNTEyIiByeD0iODAiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik01NzYgMTI4SDQ5Nkw0NDggODBIMTkyTDE0NCAxMjhINjRDMjguNjUzNCAxMjggMCAxNTYuNjUzIDAgMTkyVjQ0OEMwIDQ4My4zNDcgMjguNjUzNCA1MTIgNjQgNTEySDU3NkM2MTEuMzQ3IDUxMiA2NDAgNDgzLjM0NyA2NDAgNDQ4VjE5MkM2NDAgMTU2LjY1MyA2MTEuMzQ3IDEyOCA1NzYgMTI4Wk0zMjAgNDQ4QzI0OS4zMDcgNDQ4IDE5MiAzOTAuNjkzIDE5MiAzMjBDMTkyIDI0OS4zMDcgMjQ5LjMwNyAxOTIgMzIwIDE5MkMzOTAuNjkzIDE5MiA0NDggMjQ5LjMwNyA0NDggMzIwQzQ0OCAzOTAuNjkzIDM5MC42OTMgNDQ4IDMyMCA0NDhaTTMyMCAyMjRDMjY2Ljk4MSAyMjQgMjI0IDI2Ni45ODEgMjI0IDMyMEMyMjQgMzczLjAxOSAyNjYuOTgxIDQxNiAzMjAgNDE2QzM3My4wMTkgNDE2IDQxNiAzNzMuMDE5IDQxNiAzMjBDNDE2IDI2Ni45ODEgMzczLjAxOSAyMjQgMzIwIDIyNFoiIGZpbGw9IiM4YjczNTUiLz4KPGVsbGlwc2UgY3g9IjE2MCIgY3k9IjE3NiIgcng9IjMyIiByeT0iMTYiIGZpbGw9IiM4YjczNTUiLz4KPC9zdmc+Cg==" class="camera-icon" alt="Upload">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Text Color Panel -->
+                        <div class="theme-panel" id="textPanel">
+                            <div class="theme-grid">
+                                <div class="theme-option" data-color="#F7F4EE" style="background-color: #F7F4EE;">
+                                    <span class="theme-label" style="color: #8b7355;">lace</span>
+                                </div>
+                                <div class="theme-option" data-color="#F5E6D3" style="background-color: #F5E6D3;">
+                                    <span class="theme-label" style="color: #8b7355;">butter</span>
+                                </div>
+                                <div class="theme-option" data-color="#9B8B7E" style="background-color: #9B8B7E;">
+                                    <span class="theme-label" style="color: #8b7355;">toffee</span>
+                                </div>
+                                <div class="theme-option" data-color="#4A3428" style="background-color: #4A3428;">
+                                    <span class="theme-label" style="color: #8b7355;">cocoa</span>
+                                </div>
+                                <div class="theme-option" data-color="#B5B8A3" style="background-color: #B5B8A3;">
+                                    <span class="theme-label" style="color: #8b7355;">sage</span>
+                                </div>
+                                <div class="theme-option" data-color="#7A8B70" style="background-color: #7A8B70;">
+                                    <span class="theme-label" style="color: #8b7355;">forest bliss</span>
+                                </div>
+                                <div class="theme-option" data-color="#C5D7DD" style="background-color: #C5D7DD;">
+                                    <span class="theme-label" style="color: #8b7355;">powder blue</span>
+                                </div>
+                                <div class="theme-option" data-color="#C9B8D0" style="background-color: #C9B8D0;">
+                                    <span class="theme-label" style="color: #8b7355;">lilac dust</span>
+                                </div>
+                                <div class="theme-option" data-color="#E8C2C6" style="background-color: #E8C2C6;">
+                                    <span class="theme-label" style="color: #8b7355;">blush</span>
+                                </div>
+                                <div class="theme-option" data-color="#C99FA3" style="background-color: #C99FA3;">
+                                    <span class="theme-label" style="color: #F7F4EE;">lily</span>
+                                </div>
+                                <div class="theme-option" data-color="#8B2E3C" style="background-color: #8B2E3C;">
+                                    <span class="theme-label" style="color: #F7F4EE;">cherry</span>
+                                </div>
+                                <div class="theme-option image-upload-option" id="imageOptionText">
+                                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQwIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDY0MCA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2NDAiIGhlaWdodD0iNTEyIiByeD0iODAiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik01NzYgMTI4SDQ5Nkw0NDggODBIMTkyTDE0NCAxMjhINjRDMjguNjUzNCAxMjggMCAxNTYuNjUzIDAgMTkyVjQ0OEMwIDQ4My4zNDcgMjguNjUzNCA1MTIgNjQgNTEySDU3NkM2MTEuMzQ3IDUxMiA2NDAgNDgzLjM0NyA2NDAgNDQ4VjE5MkM2NDAgMTU2LjY1MyA2MTEuMzQ3IDEyOCA1NzYgMTI4Wk0zMjAgNDQ4QzI0OS4zMDcgNDQ4IDE5MiAzOTAuNjkzIDE5MiAzMjBDMTkyIDI0OS4zMDcgMjQ5LjMwNyAxOTIgMzIwIDE5MkMzOTAuNjkzIDE5MiA0NDggMjQ5LjMwNyA0NDggMzIwQzQ0OCAzOTAuNjkzIDM5MC42OTMgNDQ4IDMyMCA0NDhaTTMyMCAyMjRDMjY2Ljk4MSAyMjQgMjI0IDI2Ni45ODEgMjI0IDMyMEMyMjQgMzczLjAxOSAyNjYuOTgxIDQxNiAzMjAgNDE2QzM3My4wMTkgNDE2IDQxNiAzNzMuMDE5IDQxNiAzMjBDNDE2IDI2Ni45ODEgMzczLjAxOSAyMjQgMzIwIDIyNFoiIGZpbGw9IiM4YjczNTUiLz4KPGVsbGlwc2UgY3g9IjE2MCIgY3k9IjE3NiIgcng9IjMyIiByeT0iMTYiIGZpbGw9IiM4YjczNTUiLz4KPC9zdmc+Cg==" class="camera-icon" alt="Upload">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confirm Button Section -->
+            <div class="confirm-section">
+                <button class="confirm-btn" id="confirmBtn">confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Upload Modal -->
+    <div class="modal" id="imageModal">
+        <div class="image-modal-content">
+            <button class="modal-close" id="closeImageModal">×</button>
+            <h2 style="margin-bottom: 20px; font-weight: 400; color: #6b5444; font-size: 20px; text-transform: uppercase;">UPLOAD IMAGE</h2>
+            
+            <div class="upload-area" id="uploadArea">
+                <p style="font-size: 40px; margin-bottom: 10px;">📁</p>
+                <p style="font-weight: 500;">Click to upload or drag and drop</p>
+                <p style="font-size: 12px; opacity: 0.7;">PNG, JPG, GIF up to 10MB</p>
+            </div>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+            
+            <div class="url-input-group">
+                <input type="text" id="urlInput" placeholder="Or paste image URL">
+                <button id="urlSubmit">Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Timer variables
+        let workTime = 0;
+        let breakTime = 0;
+        let timeLeft = workTime;
+        let timer = null;
+        let isRunning = false;
+        let isWorkTime = true;
+        let completedPhase = null; // Track which phase just completed
+
+        // Settings backup for cancel functionality
+        let settingsBackup = {};
+
+        // DOM elements
+        const timerDisplay = document.getElementById('timerDisplay');
+        const timerTitle = document.getElementById('timerTitle');
+        const phaseIndicator = document.getElementById('phaseIndicator');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const repeatBtn = document.getElementById('repeatBtn');
+        const breakBtn = document.getElementById('breakBtn');
+        const workBtn = document.getElementById('workBtn');
+        const closeAlarmBtn = document.getElementById('closeAlarmBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsModal = document.getElementById('settingsModal');
+        const imageModal = document.getElementById('imageModal');
+        const confirmBtn = document.getElementById('confirmBtn');
+
+        // Theme variables
+        let currentBgColor = '#F7F4EE';
+        let currentTextColor = '#927E77';
+        let currentBgImage = null;
+
+        // Alarm variables
+        let currentAlarmSound = 'soft';
+        let audioContext = null;
+        let isAlarmPlaying = false;
+
+        // Time input handling with auto-formatting and digit limit
+        function setupTimeInput(inputElement) {
+            inputElement.addEventListener('keydown', (e) => {
+                const cursorPos = e.target.selectionStart;
+                const value = e.target.value;
+                
+                // Allow arrow keys, backspace, delete, tab
+                if (['ArrowLeft', 'ArrowRight', 'Backspace', 'Delete', 'Tab'].includes(e.key)) {
+                    return;
+                }
+                
+                // Only allow numbers
+                if (!/^\d$/.test(e.key)) {
+                    e.preventDefault();
+                    return;
+                }
+                
+                // Prevent typing in colon positions
+                if (cursorPos === 2 || cursorPos === 5) {
+                    e.preventDefault();
+                    return;
+                }
+                
+                // Find which segment we're in (HH, MM, or SS)
+                let segment;
+                if (cursorPos < 2) segment = 0; // Hours
+                else if (cursorPos < 5) segment = 1; // Minutes  
+                else if (cursorPos < 8) segment = 2; // Seconds
+                else {
+                    e.preventDefault();
+                    return;
+                }
+                
+                e.preventDefault();
+                
+                const parts = value.split(':');
+                const digitIndex = segment === 0 ? cursorPos : (segment === 1 ? cursorPos - 3 : cursorPos - 6);
+                
+                // Don't allow typing beyond 2 digits per segment
+                if (digitIndex >= 2) {
+                    return;
+                }
+                
+                // Replace the digit at cursor position
+                const oldPart = parts[segment];
+                const newPart = oldPart.substring(0, digitIndex) + e.key + oldPart.substring(digitIndex + 1);
+                parts[segment] = newPart;
+                
+                inputElement.value = parts.join(':');
+                
+                // Move cursor
+                let newPos = cursorPos + 1;
+                if ((segment === 0 && newPos === 2) || (segment === 1 && newPos === 5)) {
+                    newPos++; // Skip the colon
+                }
+                
+                setTimeout(() => {
+                    inputElement.setSelectionRange(newPos, newPos);
+                }, 0);
+                
+                // Trigger input event for live updates
+                inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+            
+            inputElement.addEventListener('blur', (e) => {
+                const parts = e.target.value.split(':');
+                const formatted = parts.map(p => p.padStart(2, '0')).join(':');
+                e.target.value = formatted;
+            });
+            
+            inputElement.addEventListener('click', (e) => {
+                const cursorPos = e.target.selectionStart;
+                let newPos = cursorPos;
+                
+                if (cursorPos === 2 || cursorPos === 5) {
+                    newPos = cursorPos + 1;
+                }
+                
+                e.target.setSelectionRange(newPos, newPos);
+            });
+        }
+
+        // Backup current settings
+        function backupSettings() {
+            settingsBackup = {
+                title: timerTitle.textContent,
+                workTime: workTime,
+                breakTime: breakTime,
+                bgColor: currentBgColor,
+                textColor: currentTextColor,
+                bgImage: currentBgImage,
+                alarmSound: currentAlarmSound,
+                titleInput: document.getElementById('titleInput').value,
+                workTimeInput: document.getElementById('workTimeInput').value,
+                breakTimeInput: document.getElementById('breakTimeInput').value
+            };
+        }
+
+        // Restore settings from backup
+        function restoreSettings() {
+            timerTitle.textContent = settingsBackup.title;
+            workTime = settingsBackup.workTime;
+            breakTime = settingsBackup.breakTime;
+            
+            if (isWorkTime && !isRunning) {
+                timeLeft = workTime;
+            } else if (!isWorkTime && !isRunning) {
+                timeLeft = breakTime;
+            }
+            
+            updateDisplay();
+            
+            document.getElementById('titleInput').value = settingsBackup.titleInput;
+            document.getElementById('workTimeInput').value = settingsBackup.workTimeInput;
+            document.getElementById('breakTimeInput').value = settingsBackup.breakTimeInput;
+            
+            applyBackgroundColor(settingsBackup.bgColor);
+            applyTextColor(settingsBackup.textColor);
+            
+            if (settingsBackup.bgImage) {
+                setBackgroundImage(settingsBackup.bgImage);
+            }
+            
+            currentAlarmSound = settingsBackup.alarmSound;
+            document.querySelectorAll('.alarm-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.getAttribute('data-sound') === currentAlarmSound);
+            });
+        }
+
+        // Load saved settings
+        function loadSettings() {
+            const savedTitle = localStorage.getItem('timerTitle');
+            const savedWorkTime = localStorage.getItem('workTime');
+            const savedBreakTime = localStorage.getItem('breakTime');
+            const savedBgColor = localStorage.getItem('bgColor');
+            const savedTextColor = localStorage.getItem('textColor');
+            const savedBgImage = localStorage.getItem('bgImage');
+            const savedAlarmSound = localStorage.getItem('alarmSound');
+
+            if (savedTitle) {
+                timerTitle.textContent = savedTitle;
+                document.getElementById('titleInput').value = savedTitle;
+            }
+
+            if (savedWorkTime) {
+                workTime = parseInt(savedWorkTime);
+                timeLeft = workTime;
+                document.getElementById('workTimeInput').value = formatTimeForInput(workTime);
+            }
+
+            if (savedBreakTime) {
+                breakTime = parseInt(savedBreakTime);
+                document.getElementById('breakTimeInput').value = formatTimeForInput(breakTime);
+            }
+
+            if (savedBgColor) {
+                applyBackgroundColor(savedBgColor);
+            }
+
+            if (savedTextColor) {
+                applyTextColor(savedTextColor);
+            }
+
+            if (savedBgImage) {
+                setBackgroundImage(savedBgImage);
+            }
+
+            if (savedAlarmSound) {
+                currentAlarmSound = savedAlarmSound;
+                document.querySelectorAll('.alarm-option').forEach(opt => {
+                    opt.classList.toggle('selected', opt.getAttribute('data-sound') === savedAlarmSound);
+                });
+            }
+
+            updateDisplay();
+        }
+
+        function formatTimeForInput(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function parseTimeInput(input) {
+            const parts = input.split(':');
+            if (parts.length === 3) {
+                return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
+            }
+            return 0;
+        }
+
+        function updateDisplay() {
+            // If time is negative, show "please set time" message
+            if (timeLeft < 0) {
+                timerDisplay.textContent = 'please set time';
+                timerDisplay.style.fontSize = '32px';
+                timerDisplay.style.opacity = '0.6';
+                phaseIndicator.textContent = '';
+                return;
+            } else {
+                timerDisplay.style.fontSize = '120px';
+                timerDisplay.style.opacity = '1';
+            }
+            
+            // Show time normally (including 00:00 when timeLeft is 0)
+            const displayTime = Math.max(0, timeLeft);
+            const hours = Math.floor(displayTime / 3600);
+            const minutes = Math.floor((displayTime % 3600) / 60);
+            const seconds = displayTime % 60;
+            
+            if (hours > 0) {
+                timerDisplay.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            } else {
+                timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
+            
+            // Update phase indicator only when running
+            if (isRunning) {
+                phaseIndicator.textContent = isWorkTime ? 'work' : 'break';
+            } else if (timeLeft > 0) {
+                // Clear phase indicator when paused or stopped (but time is set)
+                phaseIndicator.textContent = '';
+            }
+        }
+
+        function createOscillator(context, frequency, type = 'sine') {
+            const oscillator = context.createOscillator();
+            oscillator.type = type;
+            oscillator.frequency.setValueAtTime(frequency, context.currentTime);
+            return oscillator;
+        }
+
+        function playNote(context, frequency, startTime, duration, gainNode) {
+            const oscillator = createOscillator(context, frequency, 'sine');
+            const noteGain = context.createGain();
+            
+            noteGain.gain.setValueAtTime(0, startTime);
+            noteGain.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
+            noteGain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+            
+            oscillator.connect(noteGain);
+            noteGain.connect(gainNode);
+            
+            oscillator.start(startTime);
+            oscillator.stop(startTime + duration);
+        }
+
+        function playMelody(soundType) {
+            // Always close existing context first
+            if (audioContext) {
+                try {
+                    audioContext.close();
+                } catch (e) {
+                    console.log('Error closing audio context:', e);
+                }
+            }
+            
+            try {
+                // Create new audio context
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const masterGain = audioContext.createGain();
+                masterGain.gain.value = 0.3;
+                masterGain.connect(audioContext.destination);
+                
+                isAlarmPlaying = true;
+                
+                // Function to play one iteration of the melody
+                function playOnce() {
+                    if (!isAlarmPlaying) return; // Stop if alarm was stopped
+                    
+                    const currentTime = audioContext.currentTime;
+                    
+                    if (soundType === 'soft') {
+                        // Soft bells - gentle ascending lullaby pattern
+                        const melody = [
+                            {freq: 523.25, time: 0, duration: 0.5},      // C5
+                            {freq: 587.33, time: 0.6, duration: 0.5},    // D5
+                            {freq: 659.25, time: 1.2, duration: 0.5},    // E5
+                            {freq: 523.25, time: 1.8, duration: 0.8},    // C5 (longer)
+                        ];
+                        melody.forEach(note => {
+                            playNote(audioContext, note.freq, currentTime + note.time, note.duration, masterGain);
+                        });
+                        // Repeat after melody completes (total ~2.6 seconds)
+                        if (isAlarmPlaying) {
+                            setTimeout(playOnce, 3000);
+                        }
+                    } else if (soundType === 'gentle') {
+                        // Gentle chimes - playful twinkle pattern
+                        const melody = [
+                            {freq: 783.99, time: 0, duration: 0.3},      // G5
+                            {freq: 659.25, time: 0.4, duration: 0.3},    // E5
+                            {freq: 783.99, time: 0.8, duration: 0.3},    // G5
+                            {freq: 880.00, time: 1.2, duration: 0.3},    // A5
+                            {freq: 783.99, time: 1.6, duration: 0.6},    // G5 (longer)
+                        ];
+                        melody.forEach(note => {
+                            playNote(audioContext, note.freq, currentTime + note.time, note.duration, masterGain);
+                        });
+                        // Repeat after melody completes (total ~2.2 seconds)
+                        if (isAlarmPlaying) {
+                            setTimeout(playOnce, 2800);
+                        }
+                    } else if (soundType === 'warm') {
+                        // Warm glow - cozy descending cradle song
+                        const melody = [
+                            {freq: 880.00, time: 0, duration: 0.6},      // A5
+                            {freq: 783.99, time: 0.7, duration: 0.4},    // G5
+                            {freq: 659.25, time: 1.2, duration: 0.4},    // E5
+                            {freq: 587.33, time: 1.7, duration: 0.5},    // D5
+                            {freq: 523.25, time: 2.3, duration: 0.9},    // C5 (longest)
+                        ];
+                        melody.forEach(note => {
+                            playNote(audioContext, note.freq, currentTime + note.time, note.duration, masterGain);
+                        });
+                        // Repeat after melody completes (total ~3.2 seconds)
+                        if (isAlarmPlaying) {
+                            setTimeout(playOnce, 3800);
+                        }
+                    }
+                }
+                
+                // Start playing
+                playOnce();
+                
+                console.log('Playing alarm for', soundType, '- will loop until stopped');
+            } catch (e) {
+                console.error('Error playing melody:', e);
+            }
+        }
+
+        function stopAlarm() {
+            isAlarmPlaying = false;
+            if (audioContext) {
+                try {
+                    audioContext.close();
+                    audioContext = null;
+                } catch (e) {}
+            }
+            timerDisplay.classList.remove('pulsing');
+            phaseIndicator.textContent = '';
+            
+            // Reset to 00:00
+            if (completedPhase === 'work') {
+                timeLeft = 0;
+                isWorkTime = true;
+            } else if (completedPhase === 'break') {
+                timeLeft = 0;
+                isWorkTime = false;
+            }
+            updateDisplay();
+            completedPhase = null;
+            
+            startBtn.style.display = 'inline-block';
+            resetBtn.style.display = 'inline-block';
+            startBtn.classList.add('fade-in');
+            resetBtn.classList.add('fade-in');
+            
+            repeatBtn.classList.add('fade-out');
+            breakBtn.classList.add('fade-out');
+            workBtn.classList.add('fade-out');
+            closeAlarmBtn.classList.add('fade-out');
+            
+            setTimeout(() => {
+                repeatBtn.style.display = 'none';
+                breakBtn.style.display = 'none';
+                workBtn.style.display = 'none';
+                closeAlarmBtn.style.display = 'none';
+                repeatBtn.classList.remove('fade-out');
+                breakBtn.classList.remove('fade-out');
+                workBtn.classList.remove('fade-out');
+                closeAlarmBtn.classList.remove('fade-out');
+                startBtn.classList.remove('fade-in');
+                resetBtn.classList.remove('fade-in');
+            }, 150);
+        }
+
+        function showAlarmControls() {
+            startBtn.classList.add('fade-out');
+            resetBtn.classList.add('fade-out');
+            
+            setTimeout(() => {
+                startBtn.style.display = 'none';
+                resetBtn.style.display = 'none';
+                startBtn.classList.remove('fade-out');
+                resetBtn.classList.remove('fade-out');
+                
+                // Always show repeat and close (x) buttons
+                repeatBtn.style.display = 'inline-block';
+                closeAlarmBtn.style.display = 'inline-block';
+                repeatBtn.classList.add('fade-in');
+                closeAlarmBtn.classList.add('fade-in');
+                
+                // Show work or break button based on what just completed
+                if (completedPhase === 'work' && breakTime > 0) {
+                    breakBtn.style.display = 'inline-block';
+                    breakBtn.classList.add('fade-in');
+                    workBtn.style.display = 'none';
+                } else if (completedPhase === 'break' && workTime > 0) {
+                    workBtn.style.display = 'inline-block';
+                    workBtn.classList.add('fade-in');
+                    breakBtn.style.display = 'none';
+                }
+                
+                setTimeout(() => {
+                    repeatBtn.classList.remove('fade-in');
+                    closeAlarmBtn.classList.remove('fade-in');
+                    breakBtn.classList.remove('fade-in');
+                    workBtn.classList.remove('fade-in');
+                }, 150);
+            }, 150);
+        }
+
+        function startTimer() {
+            if (!isRunning) {
+                // Don't start if time is 0 or negative
+                if (timeLeft <= 0) {
+                    return;
+                }
+                
+                isRunning = true;
+                startBtn.style.display = 'none';
+                pauseBtn.style.display = 'inline-block';
+                timer = setInterval(() => {
+                    timeLeft--;
+                    updateDisplay();
+                    
+                    if (timeLeft <= 0) {
+                        clearInterval(timer);
+                        isRunning = false;
+                        
+                        timerDisplay.classList.add('pulsing');
+                        playMelody(currentAlarmSound);
+                        pauseBtn.style.display = 'none';
+                        showAlarmControls();
+                        
+                        // Track which phase just completed
+                        completedPhase = isWorkTime ? 'work' : 'break';
+                        
+                        if (isWorkTime) {
+                            isWorkTime = false;
+                            timeLeft = breakTime;
+                        } else {
+                            isWorkTime = true;
+                            timeLeft = workTime;
+                        }
+                    }
+                }, 1000);
+            }
+        }
+
+        function pauseTimer() {
+            if (isRunning) {
+                clearInterval(timer);
+                isRunning = false;
+                startBtn.style.display = 'inline-block';
+                pauseBtn.style.display = 'none';
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            isRunning = false;
+            timeLeft = workTime;
+            isWorkTime = true;
+            phaseIndicator.textContent = '';
+            updateDisplay();
+            stopAlarm();
+            startBtn.style.display = 'inline-block';
+            pauseBtn.style.display = 'none';
+        }
+
+        function repeatTimer() {
+            // Stop the looping alarm
+            isAlarmPlaying = false;
+            if (audioContext) {
+                try {
+                    audioContext.close();
+                    audioContext = null;
+                } catch (e) {}
+            }
+            
+            // Immediately hide alarm buttons
+            repeatBtn.style.display = 'none';
+            breakBtn.style.display = 'none';
+            workBtn.style.display = 'none';
+            closeAlarmBtn.style.display = 'none';
+            
+            timerDisplay.classList.remove('pulsing');
+            // Don't close audioContext here - let it finish playing
+            
+            // Use the time from the phase that just completed
+            if (completedPhase === 'work') {
+                timeLeft = workTime;
+                isWorkTime = true;
+            } else {
+                timeLeft = breakTime;
+                isWorkTime = false;
+            }
+            completedPhase = null;
+            isRunning = true; // Set running before updateDisplay
+            updateDisplay();
+            
+            // Show pause button immediately
+            pauseBtn.style.display = 'inline-block';
+            pauseBtn.classList.add('fade-in');
+            setTimeout(() => pauseBtn.classList.remove('fade-in'), 150);
+            
+            // Start the actual timer interval
+            timer = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    isRunning = false;
+                    
+                    timerDisplay.classList.add('pulsing');
+                    playMelody(currentAlarmSound);
+                    pauseBtn.style.display = 'none';
+                    showAlarmControls();
+                    
+                    // Track which phase just completed
+                    completedPhase = isWorkTime ? 'work' : 'break';
+                    
+                    if (isWorkTime) {
+                        isWorkTime = false;
+                        timeLeft = breakTime;
+                    } else {
+                        isWorkTime = true;
+                        timeLeft = workTime;
+                    }
+                }
+            }, 1000);
+        }
+
+        function startBreakTimer() {
+            // Stop the looping alarm
+            isAlarmPlaying = false;
+            if (audioContext) {
+                try {
+                    audioContext.close();
+                    audioContext = null;
+                } catch (e) {}
+            }
+            
+            // Immediately hide all alarm buttons
+            repeatBtn.style.display = 'none';
+            breakBtn.style.display = 'none';
+            closeAlarmBtn.style.display = 'none';
+            
+            // Start break timer
+            isWorkTime = false;
+            timeLeft = breakTime;
+            completedPhase = null;
+            isRunning = true; // Set running before updateDisplay
+            timerDisplay.classList.remove('pulsing');
+            // Don't close audioContext here - let it finish playing
+            updateDisplay();
+            
+            // Show pause button immediately
+            pauseBtn.style.display = 'inline-block';
+            pauseBtn.classList.add('fade-in');
+            setTimeout(() => pauseBtn.classList.remove('fade-in'), 150);
+            
+            // Start the actual timer interval
+            timer = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    isRunning = false;
+                    
+                    timerDisplay.classList.add('pulsing');
+                    playMelody(currentAlarmSound);
+                    pauseBtn.style.display = 'none';
+                    showAlarmControls();
+                    
+                    // Track which phase just completed
+                    completedPhase = isWorkTime ? 'work' : 'break';
+                    
+                    if (isWorkTime) {
+                        isWorkTime = false;
+                        timeLeft = breakTime;
+                    } else {
+                        isWorkTime = true;
+                        timeLeft = workTime;
+                    }
+                }
+            }, 1000);
+        }
+
+        function startWorkTimer() {
+            // Stop the looping alarm
+            isAlarmPlaying = false;
+            if (audioContext) {
+                try {
+                    audioContext.close();
+                    audioContext = null;
+                } catch (e) {}
+            }
+            
+            // Immediately hide all alarm buttons
+            repeatBtn.style.display = 'none';
+            workBtn.style.display = 'none';
+            closeAlarmBtn.style.display = 'none';
+            
+            // Start work timer
+            isWorkTime = true;
+            timeLeft = workTime;
+            completedPhase = null;
+            isRunning = true; // Set running before updateDisplay
+            timerDisplay.classList.remove('pulsing');
+            // Don't close audioContext here - let it finish playing
+            updateDisplay();
+            
+            // Show pause button immediately
+            pauseBtn.style.display = 'inline-block';
+            pauseBtn.classList.add('fade-in');
+            setTimeout(() => pauseBtn.classList.remove('fade-in'), 150);
+            
+            // Start the actual timer interval
+            timer = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    isRunning = false;
+                    
+                    timerDisplay.classList.add('pulsing');
+                    playMelody(currentAlarmSound);
+                    pauseBtn.style.display = 'none';
+                    showAlarmControls();
+                    
+                    // Track which phase just completed
+                    completedPhase = isWorkTime ? 'work' : 'break';
+                    
+                    if (isWorkTime) {
+                        isWorkTime = false;
+                        timeLeft = breakTime;
+                    } else {
+                        isWorkTime = true;
+                        timeLeft = workTime;
+                    }
+                }
+            }, 1000);
+        }
+
+        function applyBackgroundColor(color) {
+            currentBgColor = color;
+            document.body.style.backgroundColor = color;
+            if (!currentBgImage) {
+                document.body.style.backgroundImage = 'none';
+            }
+            localStorage.setItem('bgColor', color);
+            
+            document.querySelectorAll('#backgroundPanel .theme-option:not(.image-upload-option)').forEach(opt => {
+                opt.classList.toggle('selected', opt.getAttribute('data-bg') === color);
+            });
+            if (!currentBgImage) {
+                document.getElementById('imageOption').classList.remove('selected');
+            }
+        }
+
+        function applyTextColor(color) {
+            currentTextColor = color;
+            document.body.style.color = color;
+            timerDisplay.style.color = color;
+            timerTitle.style.color = color;
+            
+            document.querySelectorAll('.primary-btn').forEach(btn => {
+                btn.style.color = color;
+            });
+            
+            document.querySelectorAll('.theme-tab').forEach(tab => {
+                tab.style.color = '#8b7355';
+            });
+            
+            document.querySelectorAll('.theme-label').forEach(label => {
+                const parentOption = label.closest('.theme-option');
+                const bgColor = parentOption.style.backgroundColor;
+                // Light backgrounds get dark text, dark backgrounds get light text
+                if (bgColor === 'rgb(247, 244, 238)' || bgColor === 'rgb(245, 230, 211)' || 
+                    bgColor === 'rgb(181, 184, 163)' || bgColor === 'rgb(197, 215, 221)' ||
+                    bgColor === 'rgb(201, 184, 208)' || bgColor === 'rgb(232, 194, 198)') {
+                    label.style.color = '#8b7355';
+                } else {
+                    label.style.color = '#F7F4EE';
+                }
+            });
+            
+            localStorage.setItem('textColor', color);
+            
+            document.querySelectorAll('#textPanel .theme-option:not(.image-upload-option)').forEach(opt => {
+                opt.classList.toggle('selected', opt.getAttribute('data-color') === color);
+            });
+        }
+
+        function setBackgroundImage(url) {
+            currentBgImage = url;
+            document.body.style.backgroundImage = `url(${url})`;
+            localStorage.setItem('bgImage', url);
+            
+            document.querySelectorAll('#backgroundPanel .theme-option').forEach(o => o.classList.remove('selected'));
+            document.getElementById('imageOption').classList.add('selected');
+        }
+
+        // Settings Modal
+        settingsBtn.addEventListener('click', () => {
+            backupSettings();
+            settingsModal.classList.add('active');
+        });
+
+        document.getElementById('closeModal').addEventListener('click', () => {
+            restoreSettings();
+            settingsModal.classList.remove('active');
+        });
+
+        confirmBtn.addEventListener('click', () => {
+            settingsModal.classList.remove('active');
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                restoreSettings();
+                settingsModal.classList.remove('active');
+            }
+            if (e.target === imageModal) {
+                imageModal.classList.remove('active');
+            }
+        });
+
+        document.getElementById('titleInput').addEventListener('input', (e) => {
+            const newTitle = e.target.value || 't i m e r';
+            timerTitle.textContent = newTitle;
+            localStorage.setItem('timerTitle', newTitle);
+        });
+
+        const workTimeInput = document.getElementById('workTimeInput');
+        const breakTimeInput = document.getElementById('breakTimeInput');
+        
+        setupTimeInput(workTimeInput);
+        setupTimeInput(breakTimeInput);
+
+        workTimeInput.addEventListener('input', (e) => {
+            const seconds = parseTimeInput(e.target.value);
+            if (isWorkTime && !isRunning) {
+                workTime = seconds;
+                timeLeft = seconds;
+                updateDisplay();
+            } else {
+                workTime = seconds;
+            }
+            localStorage.setItem('workTime', seconds);
+        });
+
+        breakTimeInput.addEventListener('input', (e) => {
+            const seconds = parseTimeInput(e.target.value);
+            if (!isWorkTime && !isRunning) {
+                breakTime = seconds;
+                timeLeft = seconds;
+                updateDisplay();
+            } else {
+                breakTime = seconds;
+            }
+            localStorage.setItem('breakTime', seconds);
+        });
+
+        document.querySelectorAll('.theme-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.theme-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                const tabType = tab.getAttribute('data-tab');
+                if (tabType === 'background') {
+                    document.getElementById('backgroundPanel').classList.add('active');
+                    document.getElementById('textPanel').classList.remove('active');
+                } else {
+                    document.getElementById('backgroundPanel').classList.remove('active');
+                    document.getElementById('textPanel').classList.add('active');
+                }
+            });
+        });
+
+        document.querySelectorAll('#backgroundPanel .theme-option:not(.image-upload-option)').forEach(option => {
+            option.addEventListener('click', () => {
+                const color = option.getAttribute('data-bg');
+                currentBgImage = null;
+                localStorage.removeItem('bgImage');
+                applyBackgroundColor(color);
+            });
+        });
+
+        document.querySelectorAll('#textPanel .theme-option:not(.image-upload-option)').forEach(option => {
+            option.addEventListener('click', () => {
+                const color = option.getAttribute('data-color');
+                applyTextColor(color);
+            });
+        });
+
+        document.getElementById('imageOption').addEventListener('click', () => {
+            imageModal.classList.add('active');
+        });
+        
+        document.getElementById('imageOptionText').addEventListener('click', () => {
+            imageModal.classList.add('active');
+        });
+
+        document.getElementById('closeImageModal').addEventListener('click', () => {
+            imageModal.classList.remove('active');
+        });
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                loadImageFile(file);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                loadImageFile(file);
+            }
+        });
+
+        function loadImageFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setBackgroundImage(e.target.result);
+                imageModal.classList.remove('active');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('urlSubmit').addEventListener('click', () => {
+            const url = document.getElementById('urlInput').value;
+            if (url) {
+                setBackgroundImage(url);
+                imageModal.classList.remove('active');
+            }
+        });
+
+        document.querySelectorAll('.alarm-option').forEach(option => {
+            option.addEventListener('click', () => {
+                if (audioContext) {
+                    audioContext.close();
+                    audioContext = null;
+                }
+                
+                document.querySelectorAll('.alarm-option').forEach(o => o.classList.remove('selected'));
+                option.classList.add('selected');
+                currentAlarmSound = option.getAttribute('data-sound');
+                localStorage.setItem('alarmSound', currentAlarmSound);
+                
+                playMelody(currentAlarmSound);
+            });
+        });
+
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', pauseTimer);
+        resetBtn.addEventListener('click', resetTimer);
+        repeatBtn.addEventListener('click', repeatTimer);
+        breakBtn.addEventListener('click', startBreakTimer);
+        workBtn.addEventListener('click', startWorkTimer);
+        closeAlarmBtn.addEventListener('click', stopAlarm);
+
+        loadSettings();
+    </script>
+</body>
+</html>
